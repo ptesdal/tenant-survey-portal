@@ -1,10 +1,7 @@
-js
-
 'use client';
 
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import workerSrc from 'pdfjs-dist/build/pdf.worker.entry';
-import { jsx } from 'react/jsx-runtime';
+import workerSrc from 'pdfjs-dist/build/pdf.worker.min.js';
 
 GlobalWorkerOptions.workerSrc = workerSrc;
 
