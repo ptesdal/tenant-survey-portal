@@ -1,13 +1,13 @@
 'use client';
-
 import { useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export default function UploadForm() {
   const [fileName, setFileName] = useState('');
-  const [parsedText, setParsedText] = useState('');
+  const [textContent, setTextContent] = useState('');
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
@@ -15,39 +15,35 @@ export default function UploadForm() {
 
     setFileName(file.name);
 
-    if (file.type === 'application/pdf') {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const typedArray = new Uint8Array(reader.result);
-        const pdf = await pdfjsLib.getDocument(typedArray).promise;
-        let fullText = '';
+    const fileReader = new FileReader();
+    fileReader.onload = async function () {
+      const typedArray = new Uint8Array(this.result);
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
 
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const text = content.items.map(item => item.str).join(' ');
-          fullText += `\n\nPage ${i}:\n${text}`;
-        }
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const strings = content.items.map((item) => item.str).join(' ');
+        fullText += strings + '\n\n';
+      }
 
-        setParsedText(fullText);
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      alert('Only PDF files are supported for now.');
-    }
+      setTextContent(fullText);
+    };
+
+    fileReader.readAsArrayBuffer(file);
   };
 
   return (
-    <div>
+    <div className="p-4">
+      <h2 className="text-lg font-bold mb-2">Upload a PDF</h2>
       <input type="file" accept=".pdf" onChange={handleFileChange} />
-      {fileName && <p>Selected file: <strong>{fileName}</strong></p>}
-      {parsedText && (
-        <div style={{ whiteSpace: 'pre-wrap', marginTop: '1rem', background: '#f4f4f4', padding: '1rem', borderRadius: '8px' }}>
-          <h3>Parsed PDF Text:</h3>
-          <p>{parsedText}</p>
+      {fileName && (
+        <div className="mt-4">
+          <h3 className="font-semibold">File: {fileName}</h3>
+          <pre className="mt-2 whitespace-pre-wrap">{textContent}</pre>
         </div>
       )}
     </div>
   );
 }
-
