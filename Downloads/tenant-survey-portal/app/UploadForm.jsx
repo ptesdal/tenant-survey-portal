@@ -1,29 +1,53 @@
 'use client';
 
 import { useState } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js`;
 
 export default function UploadForm() {
-  const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState('');
+  const [parsedText, setParsedText] = useState('');
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (file) {
-      alert(`File "${file.name}" selected. Ready for parsing in next step.`);
-      // You’ll add actual file handling later
+    setFileName(file.name);
+
+    if (file.type === 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const typedArray = new Uint8Array(reader.result);
+        const pdf = await pdfjsLib.getDocument(typedArray).promise;
+        let fullText = '';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const text = content.items.map(item => item.str).join(' ');
+          fullText += `\n\nPage ${i}:\n${text}`;
+        }
+
+        setParsedText(fullText);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      alert('Only PDF files are supported for now.');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label className="block mb-2 font-medium">Upload Excel or PDF:</label>
-      <input type="file" accept=".xlsx,.xls,.pdf" onChange={handleFileChange} className="mb-4" />
-      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
-        Upload
-      </button>
-    </form>
+    <div>
+      <input type="file" accept=".pdf" onChange={handleFileChange} />
+      {fileName && <p>Selected file: <strong>{fileName}</strong></p>}
+      {parsedText && (
+        <div style={{ whiteSpace: 'pre-wrap', marginTop: '1rem', background: '#f4f4f4', padding: '1rem', borderRadius: '8px' }}>
+          <h3>Parsed PDF Text:</h3>
+          <p>{parsedText}</p>
+        </div>
+      )}
+    </div>
   );
 }
+
