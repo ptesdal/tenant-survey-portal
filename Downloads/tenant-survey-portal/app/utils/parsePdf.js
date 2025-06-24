@@ -1,7 +1,10 @@
+js
+
 'use client';
 
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import workerSrc from 'pdfjs-dist/build/pdf.worker.entry';
+import { jsx } from 'react/jsx-runtime';
 
 GlobalWorkerOptions.workerSrc = workerSrc;
 
@@ -15,8 +18,8 @@ export async function parsePdf(file) {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    const text = textContent.items.map(item => item.str).join(' ');
-    textContentArray.push(text);
+    const pageText = textContent.items.map(item => item.str).join(' ');
+    textContentArray.push(pageText);
   }
 
   return textContentArray.join('\n');
