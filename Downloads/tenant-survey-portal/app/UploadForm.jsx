@@ -1,43 +1,47 @@
 'use client';
+
 import { useState } from 'react';
+import { parsePdfFile } from './utils/parsePdf';
 
 export default function UploadForm() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [message, setMessage] = useState('');
+  const [file, setFile] = useState(null);
+  const [parsedText, setParsedText] = useState('');
+  const [error, setError] = useState('');
 
-  const handleFileChange = async (event) => {
-    const file = event.target.files[0];
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files?.[0];
+    setFile(selectedFile);
+    setParsedText('');
+    setError('');
+  };
+
+  const handleParse = async () => {
     if (!file) return;
 
-    setSelectedFile(file);
-    setMessage(`File "${file.name}" selected. Parsing...`);
-
     try {
-      // 🔁 Lazy load pdfjs-dist *in the browser only*
-      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
-
-      const reader = new FileReader();
-      reader.onload = async function () {
-        const typedarray = new Uint8Array(reader.result);
-        const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
-        const page = await pdf.getPage(1);
-        const textContent = await page.getTextContent();
-
-        const rawText = textContent.items.map((item) => item.str).join(' ');
-        setMessage(`Parsed text: ${rawText.slice(0, 200)}...`);
-      };
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error(error);
-      setMessage('Error parsing PDF. Please try a different file.');
+      const text = await parsePdfFile(file);
+      setParsedText(text);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to parse PDF.');
     }
   };
 
   return (
-    <div>
-      <h2>Upload a PDF</h2>
+    <div style={{ padding: '1rem' }}>
+      <h2>Tenant Survey Upload</h2>
       <input type="file" accept="application/pdf" onChange={handleFileChange} />
-      {message && <p>{message}</p>}
+      <button onClick={handleParse} disabled={!file} style={{ marginLeft: '1rem' }}>
+        Parse PDF
+      </button>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {parsedText && (
+        <div style={{ marginTop: '1rem', whiteSpace: 'pre-wrap' }}>
+          <h3>Parsed Output:</h3>
+          <p>{parsedText}</p>
+        </div>
+      )}
     </div>
   );
 }
+
