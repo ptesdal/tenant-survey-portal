@@ -1,57 +1,46 @@
 'use client';
-
 import { useState } from 'react';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import workerSrc from 'pdfjs-dist/build/pdf.worker.min.js?url';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 
-GlobalWorkerOptions.workerSrc = workerSrc;
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
 export default function UploadForm() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [status, setStatus] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [textContent, setTextContent] = useState('');
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    setSelectedFile(file);
-    setStatus(`File "${file.name}" selected. Ready for parsing.`);
-  };
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const handleParse = async () => {
-    if (!selectedFile) {
-      setStatus('Please select a PDF file first.');
-      return;
+    setFileName(file.name);
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const strings = content.items.map((item) => item.str).join(' ');
+      fullText += strings + '\n';
     }
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const typedArray = new Uint8Array(reader.result);
-      const pdf = await getDocument({ data: typedArray }).promise;
-
-      let fullText = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const strings = content.items.map((item) => item.str);
-        fullText += strings.join(' ') + '\n\n';
-      }
-
-      console.log('Parsed PDF text:', fullText);
-      setStatus('Parsing complete. Check console for results.');
-    };
-
-    reader.readAsArrayBuffer(selectedFile);
+    setTextContent(fullText);
   };
 
   return (
     <div style={{ padding: '2rem' }}>
-      <h2>Upload a Tenant Survey PDF</h2>
-      <input type="file" accept="application/pdf" onChange={handleFileChange} />
-      <button onClick={handleParse} style={{ marginLeft: '1rem' }}>
-        Parse PDF
-      </button>
-      <p>{status}</p>
+      <h2>Upload a Tenant Survey</h2>
+      <input type="file" accept=".pdf" onChange={handleFileChange} />
+      {fileName && <p><strong>File:</strong> {fileName}</p>}
+      {textContent && (
+        <div>
+          <h3>Extracted Text:</h3>
+          <pre>{textContent}</pre>
+        </div>
+      )}
     </div>
   );
 }
-
 
