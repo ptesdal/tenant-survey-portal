@@ -1,14 +1,22 @@
-// app/utils/parsePdf.js
-import { getDocument } from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+'use client';
 
-import { GlobalWorkerOptions } from 'pdfjs-dist/build/pdf';
-GlobalWorkerOptions.workerSrc = pdfjsWorker;
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import workerSrc from 'pdfjs-dist/build/pdf.worker.entry';
+
+GlobalWorkerOptions.workerSrc = workerSrc;
+
 export async function parsePdf(file) {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await getDocument({ data: arrayBuffer }).promise;
-  const page = await pdf.getPage(1);
-  const textContent = await page.getTextContent();
-  return textContent.items.map(item => item.str).join(' ');
-}
+  const loadingTask = getDocument({ data: arrayBuffer });
+  const pdf = await loadingTask.promise;
 
+  const textContentArray = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const text = textContent.items.map((item) => item.str).join(' ');
+    textContentArray.push(text);
+  }
+
+  return textContentArray.join('\n');
+}
