@@ -1,6 +1,6 @@
 // app/utils/parsePdf.js
 
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/webpack';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 
 GlobalWorkerOptions.workerSrc = pdfjsWorker;
