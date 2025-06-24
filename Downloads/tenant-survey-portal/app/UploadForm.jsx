@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import workerSrc from 'pdfjs-dist/build/pdf.worker.min.js?url';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+GlobalWorkerOptions.workerSrc = workerSrc;
 
 export default function UploadForm() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -22,24 +22,24 @@ export default function UploadForm() {
       return;
     }
 
-    const fileReader = new FileReader();
-    fileReader.onload = async function () {
-      const typedArray = new Uint8Array(this.result);
-      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const typedArray = new Uint8Array(reader.result);
+      const pdf = await getDocument({ data: typedArray }).promise;
 
-      let text = '';
+      let fullText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         const strings = content.items.map((item) => item.str);
-        text += strings.join(' ') + '\n\n';
+        fullText += strings.join(' ') + '\n\n';
       }
 
-      setStatus('PDF parsed successfully. See console for output.');
-      console.log('PDF TEXT:', text);
+      console.log('Parsed PDF text:', fullText);
+      setStatus('Parsing complete. Check console for results.');
     };
 
-    fileReader.readAsArrayBuffer(selectedFile);
+    reader.readAsArrayBuffer(selectedFile);
   };
 
   return (
@@ -53,3 +53,5 @@ export default function UploadForm() {
     </div>
   );
 }
+
+
