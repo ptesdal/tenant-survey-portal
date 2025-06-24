@@ -1,10 +1,15 @@
-import UploadForm from './UploadForm';
+import dynamic from 'next/dynamic';
 
-export default function Page() {
+const UploadForm = dynamic(() => import('./UploadForm'), {
+  ssr: false,
+});
+
+export default function HomePage() {
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Tenant Survey App – Updated</h1>
+    <main>
+      <h1>Tenant Survey Portal</h1>
       <UploadForm />
-    </div>
+    </main>
   );
 }
+
