@@ -1,9 +1,10 @@
+// @ts-nocheck
 'use client';
 
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import workerSrc from 'pdfjs-dist/build/pdf.worker.min.js';
+import worker from 'pdfjs-dist/build/pdf.worker.min.js?url';
 
-GlobalWorkerOptions.workerSrc = workerSrc;
+GlobalWorkerOptions.workerSrc = worker;
 
 export async function parsePdf(file) {
   const arrayBuffer = await file.arrayBuffer();
